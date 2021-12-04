@@ -10,23 +10,23 @@ fn main() {
 }
 
 fn read_input(filename: &str) -> String {
-    let result = fs::read_to_string(filename)
-        .expect("Something went wrong reading the file");
+    let result = fs::read_to_string(filename).expect("Something went wrong reading the file");
     result
 }
 
 fn solve1(instructions: std::str::Split<char>) -> String {
-    let mut v: i32 = 0; let mut h: i32 = 0;
+    let mut v: i32 = 0;
+    let mut h: i32 = 0;
     for s in instructions {
         let len: usize = s.len().try_into().unwrap();
-        let dir: &str = &s[..len-1];
+        let dir: &str = &s[..len - 1];
         // print!("{}",dir);
-        let digit: &str = &s[len-1..];
+        let digit: &str = &s[len - 1..];
         match dir {
             "forward " => h += digit.parse::<i32>().unwrap(),
             "down " => v += digit.parse::<i32>().unwrap(),
             "up " => v -= digit.parse::<i32>().unwrap(),
-            _ => print!("Error")
+            _ => print!("Error"),
         }
     }
     (v * h).to_string()
@@ -38,8 +38,8 @@ fn solve2(instructions: std::str::Split<char>) -> String {
     let mut aim: i32 = 0;
     for s in instructions {
         let len: usize = s.len().try_into().unwrap();
-        let dir: &str = &s[..len-1];
-        let digit: &str = &s[len-1..];
+        let dir: &str = &s[..len - 1];
+        let digit: &str = &s[len - 1..];
         drop(len);
 
         match dir {
@@ -50,7 +50,7 @@ fn solve2(instructions: std::str::Split<char>) -> String {
             }
             "down " => aim += digit.parse::<i32>().unwrap(),
             "up " => aim -= digit.parse::<i32>().unwrap(),
-            _ => print!("Error")
+            _ => print!("Error"),
         }
     }
     (v * h).to_string()
@@ -61,4 +61,3 @@ fn solve2(instructions: std::str::Split<char>) -> String {
 //     for n in arr { s += n; }
 //     s
 // }
-
