@@ -28,11 +28,11 @@ fn main() {
     let mut winner: Option<&Board> = None;
     for n in calls.iter() {
         for i in 0..boards.len() {
-            mark_board(&mut boards[i], *n);
+            mark_board(&mut boards[i], *n); // so there's a problem with this line
             if check_board(&boards[i]) {
-                winner = Some(&boards[i]);
-                break;
-            }
+                winner = Some(&boards[i]); // and this line
+                break; // Because the borrow checker can't tell that
+            } // the former will never be executed again :/
         }
         match winner {
             None => (),
@@ -80,7 +80,6 @@ fn build_boards(board_str: &[String]) -> Vec<Board> {
         for j in 0..5 {
             board[i % 5][j] = row[j];
         }
-
 
         if i % 5 == 4 {
             boards.push(Board {
