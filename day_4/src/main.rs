@@ -1,6 +1,7 @@
 use std::fs;
 use regex::Regex;
 
+#[derive(Clone,Copy)]
 struct Board {
     nums: [[i32; 5]; 5],
     called: [[bool; 5]; 5],
@@ -24,23 +25,8 @@ fn main() {
 
     let mut boards: Vec<Board> = build_boards(&input[1..]);
     // println!("{}", boards.len());
-    
-    let mut winner: Option<&Board> = None;
-    for n in calls.iter() {
-        for i in 0..boards.len() {
-            mark_board(&mut boards[i], *n); // so there's a problem with this line
-            if check_board(&boards[i]) {
-                winner = Some(&boards[i]); // and this line
-                break; // Because the borrow checker can't tell that
-            } // the former will never be executed again :/
-        }
-        match winner {
-            None => (),
-            Some(_) => {break;}
-        }
-    }
-    let winner: &Board = winner.unwrap();
-    println!("{:?}\n{:?}", winner.nums, winner.called);
+    let test_board = boards[0];
+    println!("{:?}", test_board.nums);
 }
 
 fn type_of<T>(_: &T) {
@@ -128,5 +114,4 @@ fn check_board(b: &Board) -> bool {
     }
 
     false
-
 }
