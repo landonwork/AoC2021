@@ -1,89 +1,74 @@
 use std::fs;
 use std::cmp::Ordering;
 
-// I've made a big mess
 fn main() {
-    let input = read_input("input.txt");
-    let codes: Vec<&str> = input.trim().split('\n').into_iter().collect();
-    let solution1 = solve1(codes.clone());
-    let mut a: Vec<i32> = vec![1,2,3];
-    a.retain(|x| *x == 1);
-    println!("{:?}",a);
-    println!("Part 1: {}", solution1);
-    let solution2 = solve2(codes);
-    println!("Part 2: {}", solution2);
-}
+    let raw: String = fs::read_to_string("input.txt")
+        .expect("Something went wrong");
+    let codes: Vec<&str> = raw
+        .trim()
+        .split('\n')
+        .collect();
 
-fn read_input(filename: &str) -> String {
-    let result = fs::read_to_string(filename).expect("Something went wrong reading the file");
-    result
-}
-
-fn most_common(codes: &Vec<&str>) -> Vec<u64> {
-    let mut total: i32 = 0;
-    let mut codes = codes.into_iter();
-    let mut code: Option<&&str> = codes.next();
-    let mut count: Vec<i32> = vec![0; code.unwrap().len()];
-
-    loop {
-        match code {
-            None => break,
-            Some(s) => {
-                let mut i = 0;
-                for c in s.chars() {
-                    count[i] += c.to_string().parse::<i32>().unwrap();
-                    i += 1;
-                }
-                total += 1;
-                code = codes.next();
-            }
+    let mut gamma = 0usize;
+    let mut epsilon = 0usize;
+    for i in 0..12 {
+        if let Some(x) = most_common(&codes, i) {
+            gamma = gamma * 2 + x;
+            epsilon = epsilon * 2 + (1 - x);
+        } else { panic!("Something went wrong"); }
+    }
+    println!("Part 1: {}", gamma * epsilon);
+    
+    let mut o2 = codes.clone();
+    let mut co2 = codes.clone();
+    for i in 0..12 {
+        let most = most_common(&o2, i);
+        if let Some(x) = most {
+            o2.retain(|y| &y[i..i+1] == x.to_string());
+        } else {
+            o2.retain(|y| &y[i..i+1] == "1");
+        }
+        if o2.len() == 1 {
+            break;
+        }
+    }
+    for i in 0..12 {
+        let most = most_common(&co2, i);
+        if let Some(x) = most {
+            co2.retain(|y| &y[i..i+1] == (1-x).to_string());
+        } else {
+            co2.retain(|y| &y[i..i+1] == "0");
+        }
+        if co2.len() == 1 {
+            break;
         }
     }
     
-    let most_common  = |x: &i32| (((*x as f32) / (total as f32)) > 0.5) as u64;
-    count.iter().map(most_common).collect()
-}
+    let o2_score: &str = o2.pop().unwrap();
+    let co2_score: &str = co2.pop().unwrap();
 
-fn solve1(codes: Vec<&str>) -> String {
-    let gamma2: Vec<u64>   = most_common(&codes);
-    let epsilon2: Vec<u64> = gamma2.iter().map(|x| 1 - x).collect();
-
-    let gamma: u64 = gamma2.iter().fold(0, |acc: u64, x: &u64| acc*2 + x);
-    let epsilon: u64 = epsilon2.iter().fold(0, |acc: u64, x: &u64| acc*2 + x);
+    let o2_score: usize = o2_score
+        .chars()
+        .fold(0usize, |acc, x| acc*2 + x.to_digit(10).unwrap() as usize);
+    let co2_score: usize = co2_score
+        .chars()
+        .fold(0usize, |acc, x| acc*2 + x.to_digit(10).unwrap() as usize);
     
-    return (gamma * epsilon).to_string();
+    println!("Part 2: {}", o2_score * co2_score);
 }
 
-fn solve2(codes: Vec<&str>) -> String {
-
-    // Magic function for O2
-    let mut v = codes.clone();
-    let mut i = 0;
-    while (v.len() != 1) & (i < codes[0].len()) {
-        v = magic(v, i, true);
-        i += 1;
+fn most_common(v: &Vec<&str>, digit: usize) -> Option<usize> {
+    let mut count: usize = 0;
+    let total = v.len();
+    for num in v {
+        count += (&num[digit..digit+1] == "1") as usize;
     }
-    println!("{:?}", v);
-    // Magic function for CO2
-
-    "hello".to_string()
-}
-
-fn magic(mut v: Vec<&str>, ind: usize, greater: bool) -> Vec<&str> {
-    let most_common: Vec<u64> = most_common(&v);
-    let mut keep: Vec<bool> = vec![true; v.len()];
-    for i in 0..v.len() {
-        let n = v[i][ind..ind + 1].to_string().parse::<u64>().unwrap();
-        match n.cmp(&most_common[ind]) {
-            Ordering::Greater => {
-                if !greater {keep[i] = false;}
-            },
-            Ordering::Equal => (),
-            Ordering::Less => {
-                if greater {keep[i] = false;}
-            },
-        }
+    let ratio = (count as f32) / (total as f32);
+    if ratio == 0.5 {
+        return None;
+    } else if ratio > 0.5 {
+        return Some(1);
+    } else {
+        return Some(0);
     }
-    v.retain(|_x| keep.pop().unwrap());
-    v
 }
