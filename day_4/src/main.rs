@@ -83,23 +83,18 @@ fn part2(calls: &Vec<usize>, boards: &mut Vec<Board>) -> usize {
     let mut called: HashSet<usize> = HashSet::new();
     for call in calls {
         called.insert(*call);
-        boards.retain(|b| !check_board(&b, &called));
-        // println!("{}", boards.len());
-        if boards.len() == 1 {
-            // println!("{:?}", boards[0]);
-            // println!("{:?}", &called);
+        if boards.len() == 1 && check_board(&boards[0], &called) {
             let mut s = 0;
             for i in 0..5 {
                 for j in 0..5 {
                     if !called.contains(&boards[0][i][j]) {
-                        println!("{}", boards[0][i][j]);
                         s += boards[0][i][j];
                     }
                 }
             }
-            println!("{}", *call);
             return s * *call;
         }
+        boards.retain(|b| !check_board(&b, &called));
     }
     0
 }
