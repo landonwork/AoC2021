@@ -1,53 +1,37 @@
 use std::fs;
 use regex::Regex;
+use std::collections::HashSet;
 
-#[derive(Clone,Copy)]
-struct Board {
-    nums: [[i32; 5]; 5],
-    called: [[bool; 5]; 5],
-}
+type Board = [[usize;5];5];
 
 fn main() {
-    let raw: String = read_input("input.txt");
-    let input: Vec<String> = raw
+    let raw: String = fs::read_to_string("input.txt").unwrap();
+    let input: Vec<&str> = raw
         .trim()
         .split('\n')
-        .map(|x| x.to_string())
         .collect();
     
-    
-    let calls: &str = &input[0];
-    let calls: Vec<i32> = calls
+    let calls: &str = input[0];
+    let calls: Vec<usize> = calls
         .split(',')
-        .map(|x| x.parse::<i32>().unwrap())
+        .map(|x| x.parse::<usize>().unwrap())
         .collect();
-    // println!("{:?}", calls);
 
     let mut boards: Vec<Board> = build_boards(&input[1..]);
-    // println!("{}", boards.len());
-    let test_board = boards[0];
-    println!("{:?}", test_board.nums);
+
+    println!("Part 1: {}", part1(&calls, &boards));
+    println!("Part 2: {}", part2(&calls, &mut boards));
 }
 
-fn type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>());
-}
-
-fn read_input(filename: &str) -> String {
-    let result = fs::read_to_string(filename).expect("Something went wrong reading the file");
-    result
-}
-
-fn build_boards(board_str: &[String]) -> Vec<Board> {
+fn build_boards(board_str: &[&str]) -> Vec<Board> {
     
     let mut boards: Vec<Board> = Vec::new();
     let mut i: usize = 0;
-    let mut board: [[i32; 5]; 5] = [[0; 5]; 5];
+    let mut board: Board = [[0; 5]; 5];
 
     for line in board_str.into_iter() {
 
-        if line.eq("") {
-            // println!("Skipping");
+        if line.eq(&"") {
             continue;
         }
         
@@ -55,63 +39,99 @@ fn build_boards(board_str: &[String]) -> Vec<Board> {
         let row: Vec<_> = p
             .split(line.trim())
             .map(|x| {
-                match x.to_string().trim().parse::<i32>() {
+                match x.parse::<usize>() {
                     Ok(n) => n,
                     Err(error) => panic!("Cannot parse value ({}): {:?}", x, error),
                 }
             })
             .collect();
-        // println!("{:?}", row);
 
         for j in 0..5 {
             board[i % 5][j] = row[j];
         }
 
         if i % 5 == 4 {
-            boards.push(Board {
-                nums: board,
-                called: [[false; 5]; 5],
-            });
-
+            boards.push(board)
         }
         i += 1;
     }
     boards
 }
 
-fn mark_board<'a>(b: &'a mut Board, n: i32) {
-    for i in 0..5 {
-        for j in 0..5{
-            if b.nums[i][j] == n {
-                b.called[i][j] = true;
+fn part1(calls: &Vec<usize>, boards: &Vec<Board>) -> usize {
+    let mut called: HashSet<usize> = HashSet::new();
+    for call in calls {
+        called.insert(*call);
+        for board in boards {
+            if check_board(&board, &called) {
+                let mut s = 0;
+                for i in 0..5 {
+                    for j in 0..5 {
+                        if !called.contains(&board[i][j]) {
+                            s += board[i][j];
+                        }
+                    }
+                }
+                return s * *call;
             }
         }
     }
+    0
 }
 
-fn check_board(b: &Board) -> bool {
+fn part2(calls: &Vec<usize>, boards: &mut Vec<Board>) -> usize {
+    let mut called: HashSet<usize> = HashSet::new();
+    for call in calls {
+        called.insert(*call);
+        boards.retain(|b| !check_board(&b, &called));
+        // println!("{}", boards.len());
+        if boards.len() == 1 {
+            // println!("{:?}", boards[0]);
+            // println!("{:?}", &called);
+            let mut s = 0;
+            for i in 0..5 {
+                for j in 0..5 {
+                    if !called.contains(&boards[0][i][j]) {
+                        println!("{}", boards[0][i][j]);
+                        s += boards[0][i][j];
+                    }
+                }
+            }
+            println!("{}", *call);
+            return s * *call;
+        }
+    }
+    0
+}
+
+fn check_board(b: &Board, called: &HashSet<usize>) -> bool {
     // Check diagonals
-    let diag1: bool = b.called[0][0] & b.called[1][1] & b.called[2][2] & b.called[3][3] & b.called[4][4];
-    let diag2: bool = b.called[0][4] & b.called[1][3] & b.called[2][2] & b.called[3][1] & b.called[4][0];
-    if diag1 | diag2 {return true;}
+    // let diag1: bool = (0..5)
+    //     .fold(true, |acc, x| acc && called.contains(&b[x][x]));
+    // let diag2: bool = (0..5)
+    //     .fold(true, |acc, x| acc && called.contains(&b[x][4-x]));
+    // if diag1 || diag2 {
+    //     return true;
+    // }
 
     // Check rows
     for i in 0..5 {
-        let mut rows: bool = false;
-        for j in 0..5 {
-            rows = rows | b.called[i][j];
+        let this_one: bool = (0..5)
+            .fold(true, |acc, x| acc && called.contains(&b[i][x]));
+        if this_one {
+            return true;
         }
-        if rows {return true;}
     }
 
     // Check columns
     for j in 0..5 {
-        let mut cols: bool = false;
-        for i in 0..5 {
-            cols = cols | b.called[i][j];
+        let this_one: bool = (0..5)
+            .fold(true, |acc, x| acc && called.contains(&b[x][j]));
+        if this_one {
+            return true;
         }
-        if cols {return true;}
     }
 
     false
 }
+
