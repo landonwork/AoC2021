@@ -21,7 +21,7 @@ mod tests {
             |x| x.chars().map(|y| y.to_digit(10).unwrap() as usize).collect()
             ).collect();
         let ans = part1(&mut dumbos);
-        println!("{}", ans);
+        //println!("{}", ans);
         assert_eq!(ans, 1656);
     }
 
@@ -76,6 +76,9 @@ fn increment_all(octos: &mut Octos) -> () {
 }
 
 fn flash(i: usize, j: usize, octos: &mut Octos, n_flashes: &mut usize) -> () {
+    if octos[i][j] > 0 {
+        octos[i][j] += 1;
+    }
     if octos[i][j] > 9 {
         *n_flashes += 1;
         octos[i][j] = 0;
@@ -88,9 +91,7 @@ fn flash(i: usize, j: usize, octos: &mut Octos, n_flashes: &mut usize) -> () {
                 }
             }
         }
-    } else if octos[i][j] > 0 {
-        octos[i][j] += 1;
-    }
+    } 
 }
 
 fn step(octos: &mut Octos, n_flashes: &mut usize) -> () { 
@@ -109,7 +110,12 @@ fn part1(octos: &mut Octos) -> usize {
 
     let mut n_flashes: usize = 0;
 
-    for _ in 0..100 {
+    for step_n in 0..100 {
+        //println!("Step {}\n--------", step_n);
+        for row in octos.iter() {
+            //println!("{:?}", row);
+        }
+        //println!("");
         step(octos, &mut n_flashes);
     }
 
@@ -124,7 +130,6 @@ fn part2(octos: &mut Octos) -> usize {
     loop {
         step(octos, &mut n_flashes);
         step_counter += 1;
-        println!("{}", n_flashes);
         if n_flashes == max_flashes {
             break;
         }
