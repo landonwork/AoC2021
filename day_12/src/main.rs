@@ -1,5 +1,5 @@
 use std::fs;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use regex::Regex;
 
 #[macro_use]
@@ -16,12 +16,18 @@ fn main() {
     }
 
     println!("Part 1: {}", part1(&map));
-    // println!("Part 2: {}", part2(&map));
+    println!("Part 2: {}", part2(&map));
 }
 
 fn part1(map: &HashMap<&str, Vec<&str>>) -> usize {
     let mut n_paths = 0usize;
     find_paths(vec!["start"], map, &mut n_paths);
+    n_paths
+}
+
+fn part2(map: &HashMap<&str, Vec<&str>>) -> usize {
+    let mut n_paths = 0usize;
+    find_paths2(vec!["start"], map, &mut n_paths);
     n_paths
 }
 
@@ -37,6 +43,26 @@ fn find_paths(path: Vec<&str>, map: &HashMap<&str, Vec<&str>>, count: &mut usize
         let mut new_path = path.clone();
         new_path.push(dest);
         find_paths(new_path, map, count);
+    }
+}
+
+fn find_paths2(path: Vec<&str>, map: &HashMap<&str, Vec<&str>>, count: &mut usize) {
+    for dest in map.get(&path[path.len()-1]).unwrap() {
+        if dest == &"end" {
+            *count += 1;
+            continue;
+        }
+        if dest == &"start" {
+            continue;
+        }
+        if has_two_small(&path) {
+            if is_small(dest) && path.contains(dest) {
+                continue;
+            }
+        }
+        let mut new_path = path.clone();
+        new_path.push(dest);
+        find_paths2(new_path, map, count);
     }
 }
 
@@ -59,3 +85,16 @@ fn is_small(cave: &str) -> bool {
     }
     SMALL.is_match(cave)
 }
+
+fn has_two_small(path: &Vec<&str>) -> bool {
+    let mut smalls: HashSet<&str> = HashSet::new();
+    for &cave in path {
+        if smalls.contains(&cave) {
+            return true;
+        } else if is_small(cave) {
+            smalls.insert(cave);
+        }
+    }
+    false
+}
+
