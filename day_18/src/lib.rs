@@ -3,6 +3,14 @@ pub mod lib {
 
     use std::ops::Add;
 
+    pub type ReduceError = (SnailFishType, i32);
+
+    #[derive(Debug,Eq,PartialEq)]
+    pub enum SnailFishType {
+        N,
+        P
+    }
+
     #[derive(Debug,Eq,PartialEq)]
     pub enum SnailFish {
         Number(i32),
@@ -43,6 +51,20 @@ pub mod lib {
                 Pair(left, right) => left.len() + right.len()
             }
         }
+
+        pub fn pairs(&self) -> usize {
+            match self {
+                Number(_) => 0,
+                Pair(left, right) => 1 + left.pairs() + right.pairs()
+            }
+        }
+
+        pub fn get_type(&self) -> SnailFishType {
+            match self {
+                Number(_) => SnailFishType::N,
+                Pair(_,_) => SnailFishType::P
+            }
+        }
     
         pub fn get(&self, ind: i32) -> Option<&Self> {
     
@@ -51,10 +73,10 @@ pub mod lib {
     
             let mut i = 0;
     
-            self.search(ind, &mut i)
+            self.find(ind, &mut i)
         }
     
-        pub fn search(&self, ind: i32, i: &mut i32) -> Option<&Self> {
+        pub fn find(&self, ind: i32, i: &mut i32) -> Option<&Self> {
             match self {
                 Number(_) => {
                     if ind == *i {
@@ -65,33 +87,93 @@ pub mod lib {
                     }
                 },
                 Pair(left, right) => {
-                    if let Some(num) = left.search(ind, i) {
+                    if let Some(num) = left.find(ind, i) {
                         return Some(num);
                     }
-                    right.search(ind, i)
+                    right.find(ind, i)
                 }
             }
         }
         
-        pub fn get_mut(&mut self) -> Option<&mut Self> {
-            Some(self)
+        pub fn get_mut(&mut self, ind: i32) -> Option<&mut Self> {
+
+            if ind < 0 {return None;}
+            if ind >= self.len() as i32 {return None;}
+
+            let mut i = 0;
+
+            self.find_mut(ind, &mut i)
         }
 
-        pub fn search_mut(&self, ind: i32, i: &mut i32) -> Option<&Self> {
+        pub fn find_mut(&mut self, ind: i32, i: &mut i32) -> Option<&mut Self> {
             match self {
                 Number(_) => {
                     if ind == *i {
-                        Some(&mut self) 
+                        Some(self) 
                     } else { 
                         *i += 1;
                         None 
                     }
                 },
                 Pair(left, right) => {
-                    if let Some(num) = left.search_mut(ind, i) {
+                    if let Some(num) = left.find_mut(ind, i) {
                         return Some(num);
                     }
-                    right.search_mut(ind, i)
+                    right.find_mut(ind, i)
+                }
+            }
+        }
+
+        pub fn get_pair(&self, ind: i32) -> Option<&Self> {
+    
+            if ind < 0 {return None;}
+            if ind >= self.pairs() as i32 {return None;}
+    
+            let mut i = 0;
+    
+            self.find_pair(ind, &mut i)
+        }
+    
+        pub fn find_pair(&self, ind: i32, i: &mut i32) -> Option<&Self> {
+            match self {
+                Number(_) => { None },
+                Pair(left, right) => {
+                    if ind == *i {
+                        return Some(self);
+                    }
+                    *i += 1;
+                    if let Some(pair) = left.find_pair(ind, i) {
+                        return Some(pair);
+                    }
+                    right.find_pair(ind, i)
+                }
+            }
+        }
+    
+        pub fn get_pair_mut(&mut self, ind: i32) -> Option<&mut Self> {
+    
+            if ind < 0 {return None;}
+            if ind >= self.pairs() as i32 {return None;}
+    
+            let mut i = 0;
+    
+            self.find_pair_mut(ind, &mut i)
+        }
+    
+        pub fn find_pair_mut(&mut self, ind: i32, i: &mut i32) -> Option<&mut Self> {
+
+            if ind == *i && self.get_type() == SnailFishType::P {
+                return Some(self);
+            }
+
+            match self {
+                Number(_) => { None },
+                Pair(left, right) => {
+                    *i += 1;
+                    if let Some(pair) = left.find_pair_mut(ind, i) {
+                        return Some(pair);
+                    }
+                    right.find_pair_mut(ind, i)
                 }
             }
         }
@@ -108,11 +190,24 @@ pub mod lib {
         }
         
         pub fn explode(&mut self, ind: i32) {
-        
+            
         }
         
         pub fn split(&mut self, ind: i32) {
-        
+            match self.get_mut(ind) {
+                Some(num) if num.magnitude() <= 9 => {
+                    println!("{:?}", num.magnitude());
+                    panic!("Tried splitting a number that was too small");
+                },
+                Some(num) => {
+                    let val = num.magnitude();
+                    let (left, right) = (val / 2, val / 2 + val % 2);
+                    *num = Pair(Box::new(Number(left)),Box::new(Number(right)));
+                },
+                None => {
+                    panic!("Tried splitting outside of SnailFish bounds");
+                }
+            }
         }
     }
     
@@ -132,6 +227,18 @@ mod tests {
     use crate::lib::SnailFish::{Pair,Number};
 
     #[test]
+    fn count_numbers() {
+        let test = SnailFish::new("[[[[0,7],5],[[5,7],2]],[[2,[9,5]],[[7,7],[5,0]]]]");
+        assert_eq!(test.len(), 13);
+    }
+
+    #[test]
+    fn count_pairs() {
+        let test = SnailFish::new("[[[[0,7],5],[[5,7],2]],[[2,[9,5]],[[7,7],[5,0]]]]");
+        assert_eq!(test.pairs(), 12);
+    }
+
+    #[test]
     fn add_snailfish() {
         let num1 = SnailFish::new("[1,2]");
         let num2 = SnailFish::new("[3,4]");
@@ -147,5 +254,42 @@ mod tests {
         assert_eq!(pair.get(1), Some(&Number(2)));
         assert_eq!(pair.get(2), Some(&Number(3)));
         assert_eq!(pair.get(3), None);
+    }
+
+    #[test]
+    fn get_mut_snailfish() {
+        let mut pair = SnailFish::new("[1,[2,3]]");
+        let num = pair.get_mut(0).unwrap();
+        *num = Pair(Box::new(Number(4)),Box::new(Number(5)));
+        assert_eq!(pair, SnailFish::new("[[4,5],[2,3]]"));
+    }
+
+    #[test]
+    fn get_pair_snailfish() {
+        let test = SnailFish::new("[[[[0,7],5],[[5,7],2]],[[2,[9,5]],[[7,7],[5,0]]]]");
+        let res = test.get_pair(4);
+        assert_eq!(res, Some(&SnailFish::new("[[5,7],2]")));
+    }
+
+    #[test]
+    fn get_pair_mut_snailfish() {
+        let mut test = SnailFish::new("[[[[0,7],5],[[5,7],2]],[[2,[9,5]],[[7,7],[5,0]]]]");
+        let victim = test.get_pair_mut(6).unwrap();
+        *victim = Number(0);
+        assert_eq!(test, SnailFish::new("[[[[0,7],5],[[5,7],2]],0]"));
+    }
+
+    #[test]
+    fn explode_snailfish() {
+        todo!();
+    }
+
+    #[test]
+    fn split_snailfish() {
+        // I built the SnailFish differently b/c I only designed the new
+        // function to recognize single digit numbers :/
+        let mut pair = Pair(Box::new(Number(15)),Box::new(Number(4)));
+        pair.split(0);
+        assert_eq!(pair, SnailFish::new("[[7,8],4]"));
     }
 }
