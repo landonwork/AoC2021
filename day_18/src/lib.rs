@@ -3,7 +3,8 @@ pub mod lib {
 
     use std::ops::Add;
 
-    pub type ReduceError = (SnailFishType, i32);
+    //                      type, pair_ind, num_ind
+    pub type ReduceError = (SnailFishType, i32, i32);
 
     #[derive(Debug,Eq,PartialEq)]
     pub enum SnailFishType {
@@ -11,7 +12,7 @@ pub mod lib {
         P
     }
 
-    #[derive(Debug,Eq,PartialEq)]
+    #[derive(Debug,Eq,PartialEq,Clone)]
     pub enum SnailFish {
         Number(i32),
         Pair(Box<SnailFish>, Box<SnailFish>)
@@ -189,7 +190,31 @@ pub mod lib {
         
         }
         
-        pub fn explode(&mut self, ind: i32) {
+        /// Explodes a pair inside the root SnailFish number
+        /// num_ind indicates the index of the left_most Number in the SnailFish number
+        pub fn explode(&mut self, pair_ind: i32, num_ind: i32) {
+
+            let pair = self.get_pair_mut(pair_ind).unwrap();
+            match pair.clone() {
+                Number(_) => (),
+                Pair(left, right) => {
+                    // For whatever reason this is okay
+                    *pair = Number(0); // This reduces all indices to the right by 1
+
+                    match self.get_mut(num_ind - 1) {
+                        None => (),
+                        Some(num) => {
+                            *num = Number(num.magnitude() + left.magnitude());
+                        }
+                    }
+                    match self.get_mut(num_ind + 1) {
+                        None => (),
+                        Some(num) => {
+                            *num = Number(num.magnitude() + right.magnitude());
+                        }
+                    }
+                }
+            }
             
         }
         
@@ -281,7 +306,9 @@ mod tests {
 
     #[test]
     fn explode_snailfish() {
-        todo!();
+        let mut test = SnailFish::new("[[5,[[3,[1,2]],4]],6]");
+        test.explode(4, 2);
+        assert_eq!(test, SnailFish::new("[[5,[[4,0],6]],6]"));
     }
 
     #[test]
