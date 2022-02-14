@@ -3,8 +3,9 @@ pub mod lib {
 
     use std::ops::Add;
 
-    //                      type, pair_ind, num_ind
-    pub type ReduceError = (SnailFishType, i32, i32);
+    //                    type, pair_ind, num_ind
+    #[derive(Debug)]
+    pub struct ReduceAction(SnailFishType, i32, i32);
 
     #[derive(Debug,Eq,PartialEq)]
     pub enum SnailFishType {
@@ -187,7 +188,71 @@ pub mod lib {
         }
         
         pub fn reduce(&mut self) {
+            loop {
+                let mut pair_i = 0;
+                let mut num_i = 0;
+                match self.check_explode(&mut pair_i, &mut num_i, 0) { // restart the traversal, depth = 0
+                    Ok(_) => (),
+                    Err(action) => {
+                        match action {
+                            ReduceAction(_, pair_ind, num_ind) => {
+                                self.explode(pair_ind, num_ind);
+                                continue;
+                            }
+                        }
+                    }
+                }
+                pair_i = 0;
+                num_i = 0;
+                match self.check_split(&mut pair_i, &mut num_i) { // restart the traversal, depth = 0
+                    Ok(_) => break, 
+                    Err(action) => {
+                        match action {
+                            ReduceAction(_a, _b, num_ind) => {
+                                self.split(num_ind);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+            ()
+        }
+
+        fn check_explode(&self, pair_i: &mut i32, num_i: &mut i32, depth: i32) -> Result<(), ReduceAction> {
+            match self {
+                Pair(left, right) => { // We check for explosions first
+
+                    if depth >= 4 {
+                        return Err(ReduceAction(SnailFishType::P, *pair_i, *num_i));
+                    }
+
+                    *pair_i += 1; // By now we have succeeded against the checks
+                    left.check_explode(pair_i, num_i, depth + 1)?;
+                    right.check_explode(pair_i, num_i, depth + 1)?;
+                },
+                Number(_val) => {
+                    *num_i += 1;
+                }
+            }
+            Ok(())
+        }
         
+        fn check_split(&self, pair_i: &mut i32, num_i: &mut i32) -> Result<(), ReduceAction> {
+            match self {
+                Pair(left, right) => { // We check for explosions first
+                    *pair_i += 1;
+                    left.check_split(pair_i, num_i)?;
+                    right.check_split(pair_i, num_i)?;
+                },
+                Number(val) => {
+                    if *val > 9 {
+                        return Err(ReduceAction(SnailFishType::N, *pair_i, *num_i));
+                    }
+                    *num_i += 1;
+                }
+            }
+            Ok(())
         }
         
         /// Explodes a pair inside the root SnailFish number
@@ -221,7 +286,7 @@ pub mod lib {
         pub fn split(&mut self, ind: i32) {
             match self.get_mut(ind) {
                 Some(num) if num.magnitude() <= 9 => {
-                    println!("{:?}", num.magnitude());
+                    // println!("{:?}", num.magnitude());
                     panic!("Tried splitting a number that was too small");
                 },
                 Some(num) => {
@@ -318,5 +383,33 @@ mod tests {
         let mut pair = Pair(Box::new(Number(15)),Box::new(Number(4)));
         pair.split(0);
         assert_eq!(pair, SnailFish::new("[[7,8],4]"));
+    }
+
+    #[test]
+    fn reduce_snailfish() {
+        let left = SnailFish::new("[[[[4,3],4],4],[7,[[8,4],9]]]");
+        let right = SnailFish::new("[1,1]");
+        assert_eq!(left + right, SnailFish::new("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"));
+    }
+
+    #[test]
+    fn sum_snailfishes() {
+        let input = [
+            "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]",
+            "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]",
+            "[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]",
+            "[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]",
+            "[7,[5,[[3,8],[1,4]]]]",
+            "[[2,[2,2]],[8,[8,1]]]",
+            "[2,9]",
+            "[1,[[[9,3],9],[[9,0],[0,7]]]]",
+            "[[[5,[7,4]],7],1]",
+            "[[[[4,2],2],6],[8,7]]"
+        ];
+        let pairs: Vec<SnailFish> = input.into_iter().map(|s| SnailFish::new(s)).collect();
+        assert_eq!(
+            pairs.into_iter().reduce(|left, right| left + right).unwrap(),
+            SnailFish::new("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")
+            );
     }
 }
