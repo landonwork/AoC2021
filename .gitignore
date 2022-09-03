@@ -11,3 +11,6 @@
 
 # Input files specific to my AoC user
 *.txt
+
+# Vim tmp files
+*.swp

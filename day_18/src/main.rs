@@ -1,8 +1,10 @@
 use std::io::Error;
 use day_18::lib::SnailFish;
+use std::time::Instant;
 
 /// This is a docstring :)
 fn main() -> Result<(), Error> {
+    let start = Instant::now();
     let raw = std::fs::read_to_string("input.txt")?;
     let mut pairs = Vec::new();
     for line in raw.lines() {
@@ -11,6 +13,7 @@ fn main() -> Result<(), Error> {
 
     println!("Part 1: {}", part1(pairs.clone()));
     println!("Part 2: {}", part2(pairs));
+    println!("Time elapsed: {:?}", start.elapsed());
 
     Ok(())
 }
