@@ -76,6 +76,10 @@ fn part_1(mut scanners: Vec<Matrix>) -> Matrix {
 
     loop {
         if scanners.len() == 1 { break }
+        if scanners.len() == 3 {
+            println!("{:?}", &scanners);
+            break;
+        }
         let mut first = 0;
 
         while first < scanners.len() - 1 {
@@ -88,25 +92,20 @@ fn part_1(mut scanners: Vec<Matrix>) -> Matrix {
                     .count();
 
                 // If we see that there are enough beacons to match two scanners together
-                if shared_n >= 78 {
+                if shared_n >= 66 {
                     // let first_orientation = to_hashset(&scanners[first]);
                     let first_distances = to_hashset(&coordinates_to_distances(&scanners[first]));
                     let scanner_orientations = Orientations::new(&scanners[second]);
                     let dist_orientations = Orientations::new(&distances[second]);
 
-                    println!("First: {}", first_distances.len());
                     // Then we rotate the second scanner until we find the matching orientation
                     // This uses our signed distance hashsets
                     let second_oriented = dist_orientations
                         .zip(scanner_orientations)
-                        .map(|(dist, scanner)| {
-                            println!("{:?}", dist.dim());
-                            (to_hashset(&dist), scanner)
-                        })
-                        .filter(
-                            |(dist, _scanner)| dist.intersection(&first_distances).count() > 0
+                        .map(|(dist, scanner)| (to_hashset(&dist), scanner))
+                        .find(
+                            |(dist, _scanner)| dist.intersection(&first_distances).count() > 1
                         )
-                        .next()
                         .unwrap()
                         .1;
 
@@ -115,15 +114,30 @@ fn part_1(mut scanners: Vec<Matrix>) -> Matrix {
                     let displacement = scanners[first].displacement(&second_oriented);
 
                     // Then we modify the coordinates of the second using the displacement
-                    //let second_matched = second_oriented.apply_sub(displacement);
+                    // let second_matched = second_oriented.apply_sub(displacement);
                     let second_matched = second_oriented - displacement;
 
                     // TODO
                     // Absorb the matched scanner into the first scanner
+                    scanners[first] = to_hashset(&scanners[first])
+                        .union(&to_hashset(&second_matched))
+                        .flatten()
+                        .copied()
+                        .collect::<Vec<_>>()
+                        .into();
 
                     // Remove the second scanner from existence
+                    scanners.swap_remove(second);
+                    distances.swap_remove(second);
+                    unsigned_distances.swap_remove(second);
 
                     // Recompute distance and unsigned distance for first scanner
+                    distances[first] = coordinates_to_distances(&scanners[first]);
+                    unsigned_distances[first] = to_unsigned_hashset(&distances[first]);
+
+                    // Print
+                    println!("Combined scanners {} and {}", first, second);
+                    println!("{} scanners remaining", scanners.len());
 
                     break;
                 }
@@ -135,7 +149,7 @@ fn part_1(mut scanners: Vec<Matrix>) -> Matrix {
             first += 1;
         }
 
-        break;
+        // break;
     }
 
     scanners.remove(0)
