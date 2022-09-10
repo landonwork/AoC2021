@@ -1,5 +1,8 @@
 use std::collections::{HashMap, HashSet};
-use day_19::{Matrix, coord_to_distances, to_hashset, to_unsigned_hashset, to_unordered_hashset};
+use crate::{
+    Matrix, Orientations, coords_to_distances, to_hashset, to_unsigned_hashset, to_unordered_hashset,
+    original_position,
+};
 
 pub fn part1(mut scanners: Vec<Matrix>) -> (Matrix, HashMap<usize, Matrix>) {
 
@@ -29,7 +32,7 @@ pub fn part1(mut scanners: Vec<Matrix>) -> (Matrix, HashMap<usize, Matrix>) {
         // If we just started or we got through all the scanners, then start over
         let mut first = 0;
 
-        while first < scanners.len() - 1 {
+        // while first < scanners.len() - 1 {
             let mut second = first + 1;
             while second < scanners.len() {
 
@@ -51,7 +54,7 @@ pub fn part1(mut scanners: Vec<Matrix>) -> (Matrix, HashMap<usize, Matrix>) {
                         .zip(scanner_orientations)
                         .enumerate()
                         .map(|(n, (dist, scanner))| (n, to_unsigned_hashset(&dist), scanner))
-                        .find(|(_, dist, _scanner)| dist.intersection(&first_distances).count() >= shared_n - 10) { // I had to give the matching here some leniency for some reason
+                        .find(|(_, dist, _scanner)| dist.intersection(&first_distances).count() >= shared_n - 5) { // I had to give the matching here some leniency for some reason
 
                             // Once we have found the correct orientation for the second scanner,
                             // we must find the correct displacement between the two scanners
@@ -69,7 +72,7 @@ pub fn part1(mut scanners: Vec<Matrix>) -> (Matrix, HashMap<usize, Matrix>) {
                                 .or_insert(HashMap::new()) // &mut HashMap<i32, Matrix>
                                     .entry(original_second) // Entry enum
                                     .or_insert(Matrix::from([[0,0,0]].as_slice())); // &mut Matrix
-                            *mut_in_place = &displacement + mut_in_place;
+                            *mut_in_place = displacement.clone() + mut_in_place.clone();
 
                             // 3. If the second scanner had absorbed any scanners, move them to the
                             //    new scanner and add the displacement (I have to make sure these
@@ -124,11 +127,6 @@ pub fn part1(mut scanners: Vec<Matrix>) -> (Matrix, HashMap<usize, Matrix>) {
                 // If there aren't enough shared beacons, increment second
                 second += 1;
             }
-            // If the first scanner does not currently have any matching scanners, increment first
-            first += 1;
-        }
-
-        // break;
     }
 
     (scanners.remove(0), tracker.remove(&0).unwrap())

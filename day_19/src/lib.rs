@@ -112,6 +112,13 @@ impl Add<Matrix> for Matrix {
     }
 }
 
+impl Sub<&Matrix> for &mut Matrix {
+    type Output = Matrix;
+    fn sub(self, right: &Matrix) -> Self::Output {
+        Matrix(&self.0 - &right.0)
+    }
+}
+
 impl Sub<Matrix> for Matrix {
     type Output = Self;
     fn sub(self, right: Matrix) -> Self {
@@ -496,25 +503,7 @@ mod tests {
 
     #[test]
     fn test_max_dist() {
-        let scanners = Matrix::from([[-1125, 72, -168], [1105, -1205, 1229], [68, -1246, -43], [-92, -2380, -20]].as_slice());
-        // -1125, 72, -168
-        // 1105, -1205, 1229
-        // A; 2230 + 1279 + 1397 = __06
-        //
-        // -1125, 72, -168
-        // 68, -1246, -43
-        //
-        // -1125, 72, -168
-        // -92, -2380, -20
-        //
-        // 1105, -1205, 1229
-        // 68, -1246, -43
-        //
-        // 1105, -1205, 1229
-        // -92, -2380, -20
-        //
-        // 68, -1246, -43
-        // -92, -2380, -20
+        let scanners = Matrix::from([[68,-1246,-43], [1105,-1205,1229], [-92,-2380,-20], [-20,-1133,1061]].as_slice());
 
         let mut distances = to_unordered_hashset(&coords_to_distances(&scanners));
         assert_eq!(
@@ -563,10 +552,29 @@ mod tests {
     #[test]
     fn test_part1() {
         let scanners = read_input("example.txt"); // A better name for this would be beacons probably but it's too late now
-        println!("Number of scanners: {}", scanners.len());
 
-        let (beacons, mut scanners) = part1(scanners);
+        let (beacons, _scanners) = part1(scanners);
         assert_eq!(beacons.dim().0, 79);
+    }
+
+    #[test]
+    fn test_part2() {
+        let expected = HashSet::from([
+            [68,-1246,-43],
+            [1105,-1205,1229],
+            [-92,-2380,-20],
+            [-20,-1133,1061]
+        ]);
+
+        let scanners = read_input("example.txt"); // A better name for this would be beacons probably but it's too late now
+
+        let (_beacons, scanners) = part1(scanners);
+        let actual: HashSet<[i32; 3]> = scanners
+            .values()
+            .map(|m| m.0.as_slice().unwrap().try_into().unwrap())
+            .collect();
+
+        assert_eq!(actual, expected);
     }
 
     #[test]

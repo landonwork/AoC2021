@@ -13,11 +13,11 @@ use ndarray::{Axis, concatenate};
 fn main() {
 
     // let scanners = read_input("input.txt");
-    let scanners = read_input("example.txt"); // A better name for this would be beacons probably but it's too late now
+    let scanners = read_input("input.txt"); // A better name for this would be beacons probably but it's too late now
     println!("Number of scanners: {}", scanners.len());
 
     let (beacons, mut scanners) = part1(scanners);
-    println!("{:?}", &scanners);
+    // println!("{:?}", &scanners);
 
     println!("Part 1: {}", beacons.dim().0);
 
