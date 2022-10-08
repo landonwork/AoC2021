@@ -2,6 +2,7 @@
 // but I think I know how to do what Dalon is doing
 // 1. Keep a list of what hasn't been visited (find out what a binaryheap is)
 //    Actually, I bet it is like a vector but it pushes onto the left.
+//    (That is not what a binary heap is)
 // 2. From the starting point, update distances
 // 3. If you updated it and it had already been visited, mark it to be
 //    visited again.
