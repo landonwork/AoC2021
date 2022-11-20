@@ -37,9 +37,11 @@ type Map = HashMap<Point, i32>;
 type Queue = BinaryHeap<Point>;
 
 fn main() {
+    // Read input
     let raw: String = std::fs::read_to_string("input.txt").unwrap();
     let mut m: Map = HashMap::new();
 
+    // Build hashmap
     let (mut row, mut col) = (0, 0);
     for c in raw.chars() {
         if c != '\n' {
@@ -52,11 +54,12 @@ fn main() {
         }
     }
 
+    // Solve
     println!("Part 1: {}", part1(m.clone()));
     println!("Part 2: {}", part2(m));
 }
 
-fn dijkstra(p: Point, m: &Map, dist: &mut Map, q: &mut Queue) -> () {
+fn dijkstra(p: Point, m: &Map, dist: &mut Map, q: &mut Queue) {
     
     lazy_static! {
         static ref DIRS: [Point; 4] =  [
@@ -68,14 +71,17 @@ fn dijkstra(p: Point, m: &Map, dist: &mut Map, q: &mut Queue) -> () {
     }
 
     for &dir in DIRS.iter() {
+        // For each neighbor, find the total distance required to reach it
+        // from the current state with the current distance traveled
         let neighbor = Point{p:(p.p.0 + dir.p.0, p.p.1 + dir.p.1)};
         if let Some(d) = dist.get(&neighbor) {
             let alt = dist.get(&p).unwrap() + m.get(&neighbor).unwrap();
             if alt < *d {
+                // If the alternative distance of moving to the next state from
+                // the current state is less than the previously believed
+                // least distance, then change the least distance and add the
+                // next state to the queue
                 *dist.get_mut(&neighbor).unwrap() = alt;
-                // For some reason, using a HashSet to avoid checking points
-                // that are already queued prevents us from getting the right
-                // answer.
                 q.push(neighbor);
             }
         }
@@ -84,14 +90,21 @@ fn dijkstra(p: Point, m: &Map, dist: &mut Map, q: &mut Queue) -> () {
 
 fn part1(m: Map) -> i32 {
     // Dijkstra's algorithm (kinda sorta)
+    // Put one thing into the queue
     let mut q: Queue = BinaryHeap::from([Point{p:(0,0)}]);
+    // Create a new copy of the least distance hashmap
     let mut d: Map = m.clone();
+    // Set all distances to the maximum
     for (_, val) in d.iter_mut() {
         *val = i32::MAX;
     }
 
+    // Set the least distance of starting point to 0
     *d.get_mut(&Point{p:(0,0)}).unwrap() = 0;
     
+    // While there are still things in the queue, continue to explore the
+    // graph. New Points will be added to the graph as Points are visited and
+    // shown to have a smaller distance than previously believed.
     loop {
         if let Some(p) = q.pop() {
             dijkstra(p, &m, &mut d, &mut q);
