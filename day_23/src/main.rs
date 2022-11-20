@@ -1,7 +1,7 @@
 //! Day 23
 #![feature(int_log)]
 
-use std::collections::HashMap;
+use std::{mem, collections::HashMap};
 use rayon::prelude::*;
 use day_23::{State, read_two_rows, read_four_rows};
 
@@ -33,6 +33,7 @@ fn main() {
 // (and minimized) until there are no paths remaining that have an energy cost
 // less than the estimated least energy cost. Then I return that energy cost.
 fn part1(start: State<2>, end: State<2>) -> i32 {
+    let mut records = [HashMap::new(), HashMap::new()]; // Two steps ago, to prevent repition hopefully
     let mut ripples = [HashMap::from([(start, 0)]), HashMap::from([(end, 0)])];
     let mut limit: i32 = 58000;
 
@@ -46,7 +47,7 @@ fn part1(start: State<2>, end: State<2>) -> i32 {
                 .into_par_iter()
                 .filter_map(|(next_state, next_energy)| {
                     let e = *energy + next_energy;
-                    if e < limit {
+                    if !records[r].contains_key(&next_state) && e < limit {
                         Some((next_state, *energy + next_energy))
                     } else {
                         None
@@ -63,23 +64,20 @@ fn part1(start: State<2>, end: State<2>) -> i32 {
             if min_start + min_end > limit { break limit }
         }
 
-        ripples[r] = states;
-        let larger_ripple = (&ripples[..]).iter().max_by_key(|rip| rip.len()).unwrap(); // Reference to larger hashmap
-        let smaller_ripple = (&ripples[..]).iter().min_by_key(|rip| rip.len()).unwrap(); // Reference to smaller hashmap
-        let limit_candidate = smaller_ripple.par_iter().filter_map(|(state, energy)| {
-            if larger_ripple.contains_key(state) {
-                Some(energy + larger_ripple.get(state).unwrap())
+        let limit_candidate = states.par_iter().filter_map(|(state, energy)| {
+            if ripples[1-r].contains_key(state) {
+                Some(energy + ripples[1-r].get(state).unwrap())
             } else {
                 None
             }
         }).min();
         match limit_candidate {
-            Some(new_limit) if new_limit < limit => {
-                limit = new_limit;
-            },
-            _ => ()
+            Some(n) if n < limit => limit = n,
+            _ => (),
         }
 
+        mem::swap(&mut records[r], &mut ripples[r]);
+        ripples[r] = states;
         count += 1;
 
         if count % 1000 == 0 { println!("{count}") }

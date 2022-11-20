@@ -136,7 +136,7 @@ impl State<2> {
                             match y {
                                 0 => !(x.abs() == 2 && new_row != 1), // if we are moving sideways, we cannot be in a room and moving 2 at the same time
                                 -1 => col == proper_col && self.is_room_ready(proper_col), // if we are moving up, we must already be in the correct room that is ready
-                                1 => !self.is_room_ready(proper_col), // if we are moving down, it must be a room that is ready
+                                1 => true, // if we are moving down, there is nothing stopping us
                                 _ => unreachable!(),
                             }
                         ) => {
