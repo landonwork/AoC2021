@@ -1,86 +1,51 @@
 //! Day 23
-#![feature(int_log)]
-
-use std::{mem, collections::HashMap};
-use rayon::prelude::*;
-use day_23::{State, read_two_rows, read_four_rows};
+use std::{
+    collections::{HashSet, BinaryHeap},
+    iter::Extend,
+    str::FromStr,
+};
+use day_23::Board;
 
 fn main() {
-    let start1 = read_two_rows("input.txt");
-    let end1 = read_two_rows("part1_solved.txt");
-    // let state2 = read_four_rows("input2.txt");
-    
-    println!("Part 1: {}", part1(start1, end1));
-    // println!("Part 2: {}", part2(state2));
+    let s1 = std::fs::read_to_string("input.txt").unwrap();
+    let board1 = Board::<15>::from_str(s1.as_str()).unwrap();
+    let s2 = std::fs::read_to_string("input2.txt").unwrap();
+    let board2 = Board::<23>::from_str(s2.as_str()).unwrap();
+
+    println!("{:?}", &board1);
+    println!("Part 1: {}", a_star(board1));
+    println!("{:?}", &board2);
+    println!("Part 2: {}", a_star(board2));
 }
 
-// We are using a meet-in-the-middle type approach
-// Because not every next state in the path will have the same total energy,
-// I wanted to alternate between moving forward and moving backward
-// using levels of energy rather than number of steps
-// in order to make sure the first path found was the shortest, but I think
-// that would slow things down because the computer will be making a bunch
-// of moves that are just A's going back and forth.
-//
-// Instead I'm going to have a maximum energy limit set forward and I will
-// do a true breadth-first search from each end. At each step, I'll create
-// a new HashMap<State, i32>. Only States with a total energy cost of
-// less than the established upper limit will be included. That limit
-// initially is 58000 because I guessed that high on my puzzle and I know
-// it was too high. That and dropping the old HashMaps should help put a
-// cap on my memory usage (as well as the meet-in-the-middle algorithm, maybe).
-// Once the step sets start overlapping, the limit will continue to be updated
-// (and minimized) until there are no paths remaining that have an energy cost
-// less than the estimated least energy cost. Then I return that energy cost.
-fn part1(start: State<2>, end: State<2>) -> i32 {
-    let mut records = [HashMap::new(), HashMap::new()]; // Two steps ago, to prevent repition hopefully
-    let mut ripples = [HashMap::from([(start, 0)]), HashMap::from([(end, 0)])];
-    let mut limit: i32 = 58000;
-
+fn a_star<const N: usize>(board: Board<N>) -> i32 {
+    let mut goal = board.clone();
+    let mut explored = HashSet::from([board.clone()]);
+    let mut queue = BinaryHeap::from([board]);
     let mut count = 0;
-    loop {
-        let r = count % 2;
-        let ripple = &ripples[r];
-        let states: HashMap<_, _> = ripple.par_iter().flat_map( |(state, energy)|
-            state
-                .neighbors(r)
-                .into_par_iter()
-                .filter_map(|(next_state, next_energy)| {
-                    let e = *energy + next_energy;
-                    if !records[r].contains_key(&next_state) && e < limit {
-                        Some((next_state, *energy + next_energy))
-                    } else {
-                        None
-                    }
-                })
-        ).collect();
 
-        println!("{}", states.len());
-
-        if states.is_empty() { break limit }
-        if limit != 58000 {
-            let min_start = ripples[0].par_iter().min_by_key(|(_state, energy)| *energy).unwrap().1;
-            let min_end = ripples[1].par_iter().min_by_key(|(_state, energy)| *energy).unwrap().1;
-            if min_start + min_end > limit { break limit }
+    while let Some(board) = queue.pop() {
+        if board.loss() < goal.loss() {
+            goal = board.clone();
+        }
+        if goal.loss() == 0 {
+            println!("{:?}", &goal);
+            return goal.energy()
         }
 
-        let limit_candidate = states.par_iter().filter_map(|(state, energy)| {
-            if ripples[1-r].contains_key(state) {
-                Some(energy + ripples[1-r].get(state).unwrap())
-            } else {
-                None
-            }
-        }).min();
-        match limit_candidate {
-            Some(n) if n < limit => limit = n,
-            _ => (),
-        }
+        let nexts: Vec<_> = board
+            .next_boards()
+            .into_iter()
+            .filter(|next| !explored.contains(next))
+            .collect();
+        explored.extend(nexts.clone());
+        queue.extend(nexts);
 
-        mem::swap(&mut records[r], &mut ripples[r]);
-        ripples[r] = states;
         count += 1;
-
-        if count % 1000 == 0 { println!("{count}") }
+        if count % 1000 == 0 {
+            println!("{count}");
+        }
     }
-}
 
+    0
+}
