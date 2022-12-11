@@ -1,6 +1,6 @@
 //! Day 23
 use std::{
-    collections::{HashSet, BinaryHeap},
+    collections::{HashMap, BinaryHeap},
     iter::Extend,
     str::FromStr,
 };
@@ -20,7 +20,8 @@ fn main() {
 
 fn a_star<const N: usize>(board: Board<N>) -> i32 {
     let mut goal = board.clone();
-    let mut explored = HashSet::from([board.clone()]);
+    // I think I have to do a little dijkstra's
+    let mut explored = HashMap::from([(board.clone(), board.energy())]);
     let mut queue = BinaryHeap::from([board]);
     let mut count = 0;
 
@@ -36,13 +37,13 @@ fn a_star<const N: usize>(board: Board<N>) -> i32 {
         let nexts: Vec<_> = board
             .next_boards()
             .into_iter()
-            .filter(|next| !explored.contains(next))
+            .filter(|next| explored.get(next).unwrap_or(&i32::MAX) > &next.energy())
             .collect();
-        explored.extend(nexts.clone());
+        nexts.iter().for_each(|next| { explored.insert(next.clone(), next.energy()); });
         queue.extend(nexts);
 
         count += 1;
-        if count % 1000 == 0 {
+        if count % 100000 == 0 {
             println!("{count}");
         }
     }

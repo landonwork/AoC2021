@@ -277,8 +277,10 @@ impl<const N: usize> Ord for Board<N> {
             Ordering::Greater => Ordering::Less,
             Ordering::Less => Ordering::Greater,
             Ordering::Equal => match self.loss.cmp(&other.loss) {
-                Ordering::Less => Ordering::Greater,
-                Ordering::Greater => Ordering::Less,
+                Ordering::Less => Ordering::Less,
+                Ordering::Greater => Ordering::Greater,
+                // Ordering::Less => Ordering::Greater,
+                // Ordering::Greater => Ordering::Less,
                 Ordering::Equal => self.inner.cmp(&other.inner),
             }
         }
